@@ -113,40 +113,47 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Setup iOS project (if missing)
+      - name: Setup iOS project properly
         run: |
-          if [ ! -d "ios/Runner.xcodeproj" ]; then
-            echo "⚠️ iOS project files missing - regenerating..."
-            flutter create --platforms=ios --org com.cashier.lebanon --project-name cashier_lebanon_pro .
-          fi
+          # Backup custom Info.plist (has camera/photo permissions)
+          cp ios/Runner/Info.plist /tmp/custom_Info.plist
+
+          # Remove incomplete iOS files and regenerate them properly
+          rm -rf ios/Runner.xcodeproj ios/Runner.xcworkspace ios/Podfile ios/Runner/Assets.xcassets ios/Flutter ios/Runner/Main.storyboard ios/Runner/LaunchScreen.storyboard ios/Runner/Runner-Bridging-Header.h
+
+          # Regenerate complete iOS project structure
+          flutter create --platforms=ios --org com.cashier.lebanon --project-name cashier_lebanon_pro .
+
+          # Restore custom Info.plist with camera/photo permissions
+          cp /tmp/custom_Info.plist ios/Runner/Info.plist
+
+      - name: Install Pods
+        run: |
+          cd ios && pod install && cd ..
 
       - name: Build iOS (Ad-Hoc / No Code Signing)
         env:
           CODE_SIGN_IDENTITY: ""
           CODE_SIGNING_REQUIRED: "NO"
           AD_HOC_CODE_SIGNING_ALLOWED: "YES"
+          CODE_SIGNING_ALLOWED: "NO"
         run: |
-          flutter build ios --release --no-codesign || {
-            echo "⚠️ iOS build failed (expected without proper signing)"
-            echo "Creating placeholder IPA..."
-            mkdir -p Payload/Runner.app
-            echo '{"status":"iOS build requires proper code signing"}' > Payload/Runner.app/Info.plist
-            zip -r cashier_lebanon_pro_unsigned.ipa Payload/
-          }
+          flutter build ios --release --no-codesign
 
-      - name: Package IPA (Ad-Hoc)
+      - name: Package IPA
         run: |
           mkdir -p Payload
-          APP_PATH=$(find build/ios -name "Runner.app" -type d 2>/dev/null | head -1)
+          APP_PATH=$(find build/ios -name "Runner.app" -type d | head -1)
           if [ -z "$APP_PATH" ]; then
-            echo "⚠️ Runner.app not found, checking alternative paths..."
-            ls -la build/ios/ 2>/dev/null || echo "No build/ios directory"
-            echo '{"status":"iOS build requires proper code signing"}' > Payload/Runner.app/Info.plist 2>/dev/null || { mkdir -p Payload/Runner.app && echo '{"status":"placeholder"}' > Payload/Runner.app/Info.plist; }
-          else
-            echo "Found app at: $APP_PATH"
-            cp -r "$APP_PATH" Payload/
+            echo "ERROR: Runner.app not found!"
+            find build/ios -type d -name "*.app" 2>/dev/null || echo "No .app found"
+            exit 1
           fi
+          echo "Found app at: $APP_PATH"
+          ls -la "$APP_PATH"
+          cp -r "$APP_PATH" Payload/
           zip -r cashier_lebanon_pro_unsigned.ipa Payload/
+          ls -lh cashier_lebanon_pro_unsigned.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4

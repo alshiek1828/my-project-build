@@ -1,5 +1,8 @@
 name: Build Cashier Lebanon Pro
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [ main, master ]

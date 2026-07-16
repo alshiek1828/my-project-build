@@ -113,19 +113,12 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Setup iOS project properly
+      - name: Ensure iOS project files exist
         run: |
-          # Backup custom Info.plist (has camera/photo permissions)
-          cp ios/Runner/Info.plist /tmp/custom_Info.plist
-
-          # Remove incomplete iOS files and regenerate them properly
-          rm -rf ios/Runner.xcodeproj ios/Runner.xcworkspace ios/Podfile ios/Runner/Assets.xcassets ios/Flutter ios/Runner/Main.storyboard ios/Runner/LaunchScreen.storyboard ios/Runner/Runner-Bridging-Header.h
-
-          # Regenerate complete iOS project structure
-          flutter create --platforms=ios --org com.cashier.lebanon --project-name cashier_lebanon_pro .
-
-          # Restore custom Info.plist with camera/photo permissions
-          cp /tmp/custom_Info.plist ios/Runner/Info.plist
+          if [ ! -f "ios/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme" ]; then
+            echo "⚠️ Missing iOS scheme - regenerating iOS project..."
+            flutter create --platforms=ios --org com.cashier.lebanon --project-name cashier_lebanon_pro .
+          fi
 
       - name: Install Pods
         run: |

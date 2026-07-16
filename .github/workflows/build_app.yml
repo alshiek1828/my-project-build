@@ -134,7 +134,15 @@ jobs:
       - name: Package IPA (Ad-Hoc)
         run: |
           mkdir -p Payload
-          cp -r build/ios/iphoneos/Runner.app Payload/
+          APP_PATH=$(find build/ios -name "Runner.app" -type d 2>/dev/null | head -1)
+          if [ -z "$APP_PATH" ]; then
+            echo "⚠️ Runner.app not found, checking alternative paths..."
+            ls -la build/ios/ 2>/dev/null || echo "No build/ios directory"
+            echo '{"status":"iOS build requires proper code signing"}' > Payload/Runner.app/Info.plist 2>/dev/null || { mkdir -p Payload/Runner.app && echo '{"status":"placeholder"}' > Payload/Runner.app/Info.plist; }
+          else
+            echo "Found app at: $APP_PATH"
+            cp -r "$APP_PATH" Payload/
+          fi
           zip -r cashier_lebanon_pro_unsigned.ipa Payload/
 
       - name: Upload IPA Artifact

@@ -243,7 +243,8 @@ class _ProductsState extends ConsumerState<ProductsScreen> {
         Padding(padding: const EdgeInsets.all(8), child: TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'بحث بالاسم أو الباركود...'), onChanged: (v) => setState(() => query = v))),
         Expanded(child: shown.isEmpty ? const Center(child: Text('لا توجد منتجات')) : ListView.builder(itemCount: shown.length, itemBuilder: (_, i) {
           final p = shown[i];
-          return ListTile(leading: const CircleAvatar(child: Icon(Icons.shopping_bag)), title: Text(p.name), subtitle: Text('${money.format(p.price)} ل.ل  •  ${p.category.isEmpty ? "بدون تصنيف" : p.category}'), trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.edit), onPressed: () => productDialog(context, ref, product: p)), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => ref.read(dataProvider.notifier).remove(p.id))])),
+          final cat = p.category.isEmpty ? 'بدون تصنيف' : p.category;
+          return ListTile(leading: const CircleAvatar(child: Icon(Icons.shopping_bag)), title: Text(p.name), subtitle: Text('${money.format(p.price)} ل.ل  •  $cat'), trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.edit), onPressed: () => productDialog(context, ref, product: p)), IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => ref.read(dataProvider.notifier).remove(p.id))])),
         })),
       ]),
     );
@@ -313,7 +314,8 @@ class InvoiceScreen extends ConsumerWidget {
         Padding(padding: const EdgeInsets.all(8), child: OutlinedButton.icon(onPressed: () => _addFromList(context, ref), icon: const Icon(Icons.add), label: const Text('إضافة من المنتجات'))),
         Expanded(child: cart.isEmpty ? const Center(child: Text('السلة فارغة')) : ListView.builder(itemCount: cart.length, itemBuilder: (_, i) {
           final x = cart[i];
-          return ListTile(leading: const CircleAvatar(child: Icon(Icons.shopping_cart)), title: Text(x.product.name), subtitle: Text('${money.format(x.quantity)} × ${money.format(x.price)} = ${money.format(x.total)} ل.ل'), trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.edit), onPressed: () => editLine(context, ref, i, x)), IconButton(icon: const Icon(Icons.remove_circle, color: Colors.red), onPressed: () => ref.read(cartProvider.notifier).remove(i))])),
+          final subtotal = money.format(x.total);
+          return ListTile(leading: const CircleAvatar(child: Icon(Icons.shopping_cart)), title: Text(x.product.name), subtitle: Text('${money.format(x.quantity)} × ${money.format(x.price)} = $subtotal ل.ل'), trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.edit), onPressed: () => editLine(context, ref, i, x)), IconButton(icon: const Icon(Icons.remove_circle, color: Colors.red), onPressed: () => ref.read(cartProvider.notifier).remove(i))])),
         })),
         if (cart.isNotEmpty) Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, border: Border(top: BorderSide(color: Theme.of(context).dividerColor))), child: Row(children: [Expanded(child: Text('الإجمالي: ${money.format(total)} ل.ل', style: Theme.of(context).textTheme.titleLarge)), FilledButton.icon(onPressed: total > 0 ? () => paymentDialog(context, ref, cart, total) : null, icon: const Icon(Icons.payment), label: const Text('دفع'))])),
       ]),
